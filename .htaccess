@@ -1,0 +1,27 @@
+# bakery-api/.htaccess
+# ─────────────────────────────────────────────────────────────
+#  1. Clean URL rewrites  (requires mod_rewrite)
+#  2. Block direct access to config files
+# ─────────────────────────────────────────────────────────────
+
+Options -Indexes
+RewriteEngine On
+
+# ── Block access to the config directory ─────────────────────
+RewriteRule ^config/ - [F,L]
+
+# ── Clean URL → PHP file rewrites ────────────────────────────
+#  /api/products          → /api/products.php
+#  /api/product-details   → /api/product-details.php
+#  /api/categories        → /api/categories.php
+#  /api/cart              → /api/cart.php
+#
+#  Query strings (?id=1, ?clear=1 …) are passed through automatically.
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/([a-zA-Z0-9_-]+)$ api/$1.php [QSA,L]
+
+# ── Force JSON error pages (suppress Apache HTML errors) ─────
+ErrorDocument 404 /bakery-api/api/products.php
+ErrorDocument 500 /bakery-api/api/products.php
