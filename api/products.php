@@ -39,10 +39,10 @@ try {
             p.product_id,
             p.product_name,
             p.collections,
-            p.image_url,                -- ✅ ADDED
+            p.image_url,              
             c.category_name,
             p.description,
-            MIN(ps.price) AS price     -- ✅ FIX duplicate rows
+            MIN(ps.price) AS price     
         FROM products p
         INNER JOIN categories c 
             ON p.category_id = c.category_id
@@ -108,7 +108,7 @@ try {
             'category_name' => $product['category_name'],
             'price'         => (float)$product['price'],
 
-            // ✅ REAL image from DB (fallback if NULL)
+            
             'image_url'     => $product['image_url'] 
                                 ? $product['image_url']
                                 : '/images/default.jpg',
