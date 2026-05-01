@@ -1,12 +1,12 @@
 <?php
 
-define('DB_HOST',     getenv('MYSQLHOST'));
-define('DB_PORT',     getenv('MYSQLPORT'));
-define('DB_USER',     getenv('MYSQLUSER'));
-define('DB_PASSWORD', getenv('MYSQLPASSWORD'));
-define('DB_NAME',     getenv('MYSQLDATABASE'));
+define('DB_HOST', getenv('MYSQLHOST'));
+define('DB_NAME', getenv('MYSQLDATABASE'));
+define('DB_USER', getenv('MYSQLUSER'));
+define('DB_PASS', getenv('MYSQLPASSWORD'));
+define('DB_PORT', getenv('MYSQLPORT') ?: 3306);
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 
 if ($conn->connect_error) {
     header('Content-Type: application/json');
