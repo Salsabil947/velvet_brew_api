@@ -4,11 +4,12 @@
 // ============================================================
 
 // --- Your database settings ---
-define('DB_HOST',   getenv('DB_HOST'));
-define('DB_PORT',      getenv('DB_PORT'));
-define('DB_USER',     getenv('DB_USER'));
-define('DB_PASSWORD', getenv('DB_PASS'));
-define('DB_NAME',     getenv('DB_NAME'));
+define('DB_HOST', getenv('MYSQLHOST'));
+define('DB_NAME', getenv('MYSQLDATABASE'));
+define('DB_USER', getenv('MYSQLUSER'));
+define('DB_PASSWORD', getenv('MYSQLPASSWORD'));
+define('DB_PORT', getenv('MYSQLPORT') ?: 3306);
+
 
 // --- Create the connection ---
 // Port must be passed as the 4th parameter separately — not inside the host string
