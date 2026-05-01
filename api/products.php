@@ -11,7 +11,6 @@
  *   category: Filter by category name
  *   collection: Filter by collection name
  */
-
 require_once '../config/cors.php';
 require_once '../config/db.php';
 require_once '../config/response.php';
@@ -33,20 +32,21 @@ try {
     $collection = $_GET['collection'] ?? '';
 
     // ============================================
-    // SQL Query
+    // SQL Query (FIXED)
     // ============================================
     $sql = "
         SELECT
             p.product_id,
             p.product_name,
             p.collections,
+            p.image_url,                -- ✅ ADDED
             c.category_name,
             p.description,
-            p.price
+            MIN(ps.price) AS price     -- ✅ FIX duplicate rows
         FROM products p
         INNER JOIN categories c 
             ON p.category_id = c.category_id
-        INNER JOIN product_sizes ps 
+        LEFT JOIN product_sizes ps 
             ON p.product_id = ps.product_id
         WHERE 1 = 1
     ";
@@ -72,8 +72,9 @@ try {
         GROUP BY
             p.product_id,
             p.product_name,
-            p.description,
             p.collections,
+            p.image_url,
+            p.description,
             c.category_name
         ORDER BY
             p.collections,
@@ -86,7 +87,7 @@ try {
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ============================================
-    // Group by collection for UI sections
+    // Group by collection
     // ============================================
     $collections = [];
 
@@ -105,10 +106,12 @@ try {
             'product_name'  => $product['product_name'],
             'description'   => $product['description'],
             'category_name' => $product['category_name'],
-            'price'    => (float)$product['price'],
+            'price'         => (float)$product['price'],
 
-            // Placeholder values for UI
-            'image_url'     => "/images/products/" . $product['product_id'] . ".jpg",
+            // ✅ REAL image from DB (fallback if NULL)
+            'image_url'     => $product['image_url'] 
+                                ? $product['image_url']
+                                : '/images/default.jpg',
         ];
     }
 
@@ -118,6 +121,7 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log($e->getMessage());
     send_error('Database error', 500);
 } catch (Exception $e) {
     send_error('Server error', 500);
