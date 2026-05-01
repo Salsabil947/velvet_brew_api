@@ -1,8 +1,9 @@
 <?php
 // ============================================================
-// functions.php — Dashboard Query Functions
+// functions_dashboard.php — Dashboard Query Functions
 // ============================================================
 
+// ============================================================
 // 1. getTotalRevenue($conn)
 // ============================================================
 // WHAT IT DOES:
@@ -11,10 +12,6 @@
 //       (price × quantity) − discount
 //
 // RETURNS: array with key 'total_revenue'  e.g. ['total_revenue' => 14280.00]
-//
-// SIMPLE EXPLANATION:
-//   SUM = add everything together.
-//   We go through every row in order_items and add up total_price.
 // ============================================================
 function getTotalRevenue($conn) {
     $sql = "SELECT SUM(total_price) AS total_revenue
@@ -23,7 +20,6 @@ function getTotalRevenue($conn) {
     $result = $conn->query($sql);
     $row    = $result->fetch_assoc();
 
-    // If there are no orders yet, return 0 instead of NULL
     return [
         'total_revenue' => $row['total_revenue'] ?? 0
     ];
@@ -37,11 +33,6 @@ function getTotalRevenue($conn) {
 //   Counts how many orders were placed today.
 //
 // RETURNS: array with key 'orders_today'  e.g. ['orders_today' => 3]
-//
-// SIMPLE EXPLANATION:
-//   COUNT(*) = count the number of rows.
-//   CURDATE() = today's date (MySQL gives us this automatically).
-//   WHERE order_date = CURDATE() means "only rows from today".
 // ============================================================
 function getOrdersToday($conn) {
     $sql = "SELECT COUNT(*) AS orders_today
@@ -66,11 +57,6 @@ function getOrdersToday($conn) {
 //   Step 2: Take the average of those totals → average order value
 //
 // RETURNS: array with key 'avg_order_value'  e.g. ['avg_order_value' => 42.50]
-//
-// SIMPLE EXPLANATION:
-//   The inner query (subquery) adds up total_price per order.
-//   The outer query takes the average of those sums.
-//   This is different from AVG(price) which would average item prices — wrong!
 // ============================================================
 function getAverageOrderValue($conn) {
     $sql = "SELECT AVG(order_total) AS avg_order_value
@@ -96,16 +82,6 @@ function getAverageOrderValue($conn) {
 //   Finds the product that has been ordered the most (by quantity).
 //
 // RETURNS: array with key 'product_name'  e.g. ['product_name' => 'Dark Sumatra']
-//
-// SIMPLE EXPLANATION:
-//   JOIN connects three tables together:
-//     order_items → product_sizes → products
-//   We need this chain because order_items only stores product_sizes_id,
-//   not the product name directly.
-//   SUM(quantity) = total units sold per product
-//   GROUP BY = group rows by product so we can sum each one separately
-//   ORDER BY total DESC = put the highest number first
-//   LIMIT 1 = only take the top result
 // ============================================================
 function getTopRoast($conn) {
     $sql = "SELECT
@@ -129,38 +105,35 @@ function getTopRoast($conn) {
 
 
 // ============================================================
-// 5. getRecentOrders($conn)
+// 5. getRecentOrders($conn, $limit)
 // ============================================================
 // WHAT IT DOES:
-//   Gets the 5 most recent orders with all the info shown
-//   in the dashboard table:
-//     - Order ID
-//     - Customer full name
-//     - Items summary (e.g. "2x Midnight Roast, 1x Espresso")
-//     - Status
-//     - Total amount
+//   Gets the most recent orders for the dashboard table.
 //
-// RETURNS: array of rows, each row is one order
+// FIX: The orders.status ENUM in the database uses 'order placed'
+//      but the UI and api_dashboard.php use 'pending'.
+//      We map 'order placed' → 'pending' here so the UI badge
+//      shows the correct label and the status filter still works.
 //
-// SIMPLE EXPLANATION:
-//   LEFT JOIN = like JOIN but keeps the order row even if
-//               there are no matching items (safer than INNER JOIN).
-//   GROUP_CONCAT = combine multiple item names into one string
-//                  separated by ", "
-//                  e.g. "2x Midnight Roast, 1x Espresso"
-//   CONCAT = stick two strings together
-//            CONCAT(oi.quantity, 'x ', p.product_name)
-//            gives us "2x Midnight Roast"
-//   GROUP BY = we group by order so all items of the same order
-//              are combined into one row
-//   ORDER BY order_date DESC = newest orders first
-//   LIMIT 5 = only the last 5
+// RETURNS: array of order rows
 // ============================================================
-function getRecentOrders($conn) {
+function getRecentOrders($conn, $limit = 5) {
+
+    // Validate and clamp the limit
+    $limit = (int) $limit;
+    if ($limit <= 0) $limit = 5;
+    if ($limit > 100) $limit = 100;
+
+    // FIX: Added CASE to map 'order placed' → 'pending' so the
+    //      UI status badge matches what the frontend expects.
+    //      The rest of the statuses already match.
     $sql = "SELECT
                 o.order_id,
                 CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-                o.status,
+                CASE o.status
+                    WHEN 'order placed' THEN 'pending'
+                    ELSE o.status
+                END AS status,
                 GROUP_CONCAT(
                     CONCAT(oi.quantity, 'x ', p.product_name)
                     ORDER BY p.product_name
@@ -168,20 +141,17 @@ function getRecentOrders($conn) {
                 ) AS items,
                 SUM(oi.total_price) AS amount
             FROM orders AS o
-            JOIN customers     AS c  ON c.customer_id       = o.customer_id
+            JOIN customers      AS c  ON c.customer_id       = o.customer_id
             LEFT JOIN order_items   AS oi ON oi.order_id         = o.order_id
             LEFT JOIN product_sizes AS ps ON ps.product_sizes_id = oi.product_sizes_id
             LEFT JOIN products      AS p  ON p.product_id        = ps.product_id
             GROUP BY o.order_id, customer_name, o.status, o.order_date
             ORDER BY o.order_date DESC
-            LIMIT 5";
-
-    // FIX: Changed INNER JOIN to LEFT JOIN on order_items, product_sizes, products
-    // so orders with no items are NOT silently dropped from the dashboard.
+            LIMIT $limit";
 
     $result = $conn->query($sql);
-
     $orders = [];
+
     while ($row = $result->fetch_assoc()) {
         $orders[] = $row;
     }
@@ -195,28 +165,24 @@ function getRecentOrders($conn) {
 // ============================================================
 // WHAT IT DOES:
 //   Gets inventory levels for all products.
-//   Also flags products that are low on stock using the
-//   low_stock_threshold column we added to the inventory table.
+//   Also flags products that are low on stock.
+//
+// FIX: The inventory.unit ENUM in the DB uses 'Kg' (capital K)
+//      but the UI shows 'kg' (lowercase).
+//      We use LOWER(i.unit) so it always returns 'kg' or 'pcs'.
 //
 // RETURNS: array of rows, each row has:
 //   - product_name
 //   - quantity
-//   - unit  (Kg or pcs)
+//   - unit          (now always lowercase: 'kg' or 'pcs')
 //   - low_stock_threshold
-//   - is_low_stock  (1 = yes, 0 = no)  ← use this for the red badge
-//
-// SIMPLE EXPLANATION:
-//   JOIN = connect inventory to products to get the product name.
-//   CASE WHEN = like an if/else in PHP, but inside SQL.
-//     If quantity <= low_stock_threshold → is_low_stock = 1
-//     Otherwise                         → is_low_stock = 0
-//   ORDER BY quantity ASC = show lowest stock first (most urgent at top)
+//   - is_low_stock  (1 = yes, 0 = no)
 // ============================================================
 function getInventoryStatus($conn) {
     $sql = "SELECT
                 p.product_name,
                 i.quantity,
-                i.unit,
+                LOWER(i.unit) AS unit,
                 i.low_stock_threshold,
                 CASE
                     WHEN i.quantity <= i.low_stock_threshold THEN 1
@@ -249,28 +215,15 @@ function getInventoryStatus($conn) {
 //   - last_month   (total revenue last month)
 //   - trend_pct    (percentage change, e.g. 12.5 or -3.2)
 //   - trend_label  (e.g. "+12.5%" or "-3.2%")
-//
-// SIMPLE EXPLANATION:
-//   YEAR(o.order_date) = the year part of the date
-//   MONTH(o.order_date) = the month part of the date
-//   YEAR(CURDATE()) / MONTH(CURDATE()) = this month right now
-//   We calculate last month carefully because January - 1 = December
-//   of the previous year (MySQL handles this with DATE_FORMAT tricks).
-//
-//   % change formula:
-//     ((this - last) / last) * 100
 // ============================================================
 function getRevenueTrend($conn) {
 
-    // --- This month's revenue ---
     $sql_this = "SELECT SUM(oi.total_price) AS revenue
                  FROM order_items AS oi
                  JOIN orders AS o ON o.order_id = oi.order_id
                  WHERE YEAR(o.order_date)  = YEAR(CURDATE())
                    AND MONTH(o.order_date) = MONTH(CURDATE())";
 
-    // --- Last month's revenue ---
-    // DATE_SUB(CURDATE(), INTERVAL 1 MONTH) moves back exactly 1 month
     $sql_last = "SELECT SUM(oi.total_price) AS revenue
                  FROM order_items AS oi
                  JOIN orders AS o ON o.order_id = oi.order_id
@@ -283,7 +236,6 @@ function getRevenueTrend($conn) {
     $this_month = (float)($this_result['revenue'] ?? 0);
     $last_month = (float)($last_result['revenue'] ?? 0);
 
-    // Calculate % change (avoid divide by zero)
     if ($last_month > 0) {
         $trend_pct = (($this_month - $last_month) / $last_month) * 100;
     } else {
@@ -314,10 +266,6 @@ function getRevenueTrend($conn) {
 //   - yesterday     (orders yesterday)
 //   - trend_pct     (percentage change)
 //   - trend_label   (e.g. "+4.2%")
-//
-// SIMPLE EXPLANATION:
-//   DATE_SUB(CURDATE(), INTERVAL 1 DAY) = yesterday's date
-//   Same % change formula as getRevenueTrend().
 // ============================================================
 function getOrdersTrend($conn) {
 
@@ -335,7 +283,6 @@ function getOrdersTrend($conn) {
     $today     = (int)($today_result['total']     ?? 0);
     $yesterday = (int)($yesterday_result['total'] ?? 0);
 
-    // Calculate % change (avoid divide by zero)
     if ($yesterday > 0) {
         $trend_pct = (($today - $yesterday) / $yesterday) * 100;
     } else {
