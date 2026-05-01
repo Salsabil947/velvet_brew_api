@@ -325,6 +325,16 @@ function updateProduct($conn, $product_id, $data) {
     $stmt->execute();
     $stmt->close();
 
+    // --- Update product_sizes table ---
+$stmt = $conn->prepare(
+        "UPDATE product_sizes
+         SET price = ?
+         WHERE product_id = ?"
+    );
+    $stmt->bind_param('di', $price, $id);
+    $stmt->execute();
+    $stmt->close();
+
     // --- Update inventory table ---
     $stmt = $conn->prepare(
         "UPDATE inventory
