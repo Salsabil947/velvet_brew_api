@@ -1,19 +1,24 @@
 <?php
 
-define('DB_HOST', getenv('MYSQLHOST'));
-define('DB_NAME', getenv('MYSQLDATABASE'));
-define('DB_USER', getenv('MYSQLUSER'));
-define('DB_PASS', getenv('MYSQLPASSWORD'));
-define('DB_PORT', getenv('MYSQLPORT') ?: 3306);
+$host = getenv('MYSQLHOST') ?: $_ENV['MYSQLHOST'] ?? $_SERVER['MYSQLHOST'] ?? null;
+$user = getenv('MYSQLUSER') ?: $_ENV['MYSQLUSER'] ?? $_SERVER['MYSQLUSER'] ?? null;
+$pass = getenv('MYSQLPASSWORD') ?: $_ENV['MYSQLPASSWORD'] ?? $_SERVER['MYSQLPASSWORD'] ?? null;
+$db   = getenv('MYSQLDATABASE') ?: $_ENV['MYSQLDATABASE'] ?? $_SERVER['MYSQLDATABASE'] ?? null;
+$port = getenv('MYSQLPORT') ?: 3306;
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+$conn = new mysqli($host, $user, $pass, $db, $port);
 
 if ($conn->connect_error) {
     header('Content-Type: application/json');
     http_response_code(500);
     die(json_encode([
         'error' => 'Database connection failed',
-        'details' => $conn->connect_error
+        'debug' => [
+            'host' => $host,
+            'user' => $user,
+            'db'   => $db,
+            'port' => $port
+        ]
     ]));
 }
 
