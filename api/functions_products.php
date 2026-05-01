@@ -153,49 +153,58 @@ function addProduct($conn, $data) {
     $price        = (float) ($data['price']    ?? 0);
     $quantity     = (float) ($data['quantity'] ?? 0);
     $category_id  = (int) ($data['category_id'] ?? 4);
+
+    $image_url = trim($data['image_url'] ?? '');
+
     $allowed_cats = [1, 2, 3, 4];
     if (!in_array($category_id, $allowed_cats)) {
         return [
             'success' => false,
-            'error'   => 'Invalid category_id. Use: 1 (coffee), 2 (desserts), 3 (pastries), 4 (coffee beans)'
+            'error'   => 'Invalid category_id'
         ];
     }
 
-    // FIX: Validate against the actual DB ENUM column 'collections' (plural)
-    $collection          = trim($data['collection'] ?? 'seasonal specials');
+    // --- Validate collection ---
+    $collection = trim($data['collection'] ?? 'seasonal specials');
     $allowed_collections = [
         'fresh brews',
         'handmade croissants',
         'artisanal toasts',
         'seasonal specials'
     ];
+
     if (!in_array($collection, $allowed_collections)) {
         return [
             'success' => false,
-            'error'   => 'Invalid collection. Allowed: ' . implode(', ', $allowed_collections)
+            'error'   => 'Invalid collection'
         ];
     }
 
     // --- Validate roast_type ---
     $roast_type     = trim($data['roast_type'] ?? 'Medium');
     $allowed_roasts = ['Light', 'Medium', 'Dark'];
-    if (!in_array($roast_type, $allowed_roasts)) {
-        return ['success' => false, 'error' => 'Invalid roast type. Allowed: Light, Medium, Dark'];
-    }
 
-    // --- Insert into products table ---
+    if (!in_array($roast_type, $allowed_roasts)) {
+        return ['success' => false, 'error' => 'Invalid roast type'];
+    }
+    
     $stmt = $conn->prepare(
-        "INSERT INTO products (category_id, collections, product_name, description, roast_type, price)
-         VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO products 
+        (category_id, collections, product_name, description, roast_type, price, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
-    // bind order must match column order above:
-    // i = category_id (int)
-    // s = collections (string)
-    // s = product_name (string)
-    // s = description (string)
-    // s = roast_type (string)
-    // d = price (float/double)
-    $stmt->bind_param('issssd', $category_id, $collection, $product_name, $description, $roast_type, $price);
+
+    $stmt->bind_param(
+        'issssds',
+        $category_id,
+        $collection,
+        $product_name,
+        $description,
+        $roast_type,
+        $price,
+        $image_url
+    );
+
     $stmt->execute();
 
     if ($stmt->affected_rows === 0) {
@@ -206,7 +215,7 @@ function addProduct($conn, $data) {
     $new_product_id = $conn->insert_id;
     $stmt->close();
 
-    // --- Insert into product_sizes table ---
+    // --- Insert into product_sizes ---
     $default_size = 'regular';
     $stmt = $conn->prepare(
         "INSERT INTO product_sizes (product_id, size, price)
@@ -216,11 +225,9 @@ function addProduct($conn, $data) {
     $stmt->execute();
     $stmt->close();
 
-    // --- Insert into inventory table ---
-    // Using 'pcs' because that is a valid DB ENUM value.
-    // Use 'Kg' (capital K) if the product is measured in kilograms.
+    // --- Insert into inventory ---
     $low_stock_threshold = 10;
-    $unit                = 'pcs';
+    $unit = 'pcs';
 
     $stmt = $conn->prepare(
         "INSERT INTO inventory (product_id, quantity, unit, low_stock_threshold)
