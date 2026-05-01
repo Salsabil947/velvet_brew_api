@@ -1,14 +1,10 @@
-FROM php:8.2-apache
+FROM php:8.2
 
-# Install extensions
+
 RUN docker-php-ext-install pdo pdo_mysql mysqli
+RUN a2enmod rewrite
 
-# Enable rewrite safely
-RUN apt-get update && apt-get install -y apache2-utils \
-    && a2enmod rewrite
+COPY . /app
+WORKDIR /app
 
-# Copy files
-COPY . /var/www/html/
-
-# Allow .htaccess
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+CMD php -S 0.0.0.0:$PORT
