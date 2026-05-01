@@ -13,10 +13,14 @@
 
 declare(strict_types=1);
 
+// CORS MUST come first
+require_once __DIR__ . '/../config/cors.php';
+set_cors_headers();
+
+// Then other headers
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../config/cors.php';
 
 // ─── 1. Only allow POST ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
