@@ -1,36 +1,33 @@
 <?php
 // ============================================================
 // config/cors.php
-// CORS Headers — allows React (running on a different port)
-// to communicate with this PHP backend.
+// Supports multiple frontend origins + credentials
 // ============================================================
 
-/**
- * set_cors_headers()
- * Call this at the TOP of every API file, before any output.
- *
- * During development on XAMPP:
- *   - PHP runs on http://localhost (port 80)
- * CORS headers tell the browser it's safe to allow cross-origin requests.
- */
 function set_cors_headers(): void {
-   
-    // Allow all origins (for development)
-    header('Access-Control-Allow-Origin: *');
-    
-    // Allow these HTTP methods
-    header('Access-Control-Allow-Methods: GET, POST,  PUT, DELETE, OPTIONS');
 
-    // Allow these request headers (Content-Type is needed for POST JSON body)
+    // 👇 Allowed frontend origins
+    $allowed_origins = [
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ];
+
+    // 👇 Get request origin
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+    // 👇 Allow only known origins (REQUIRED when using credentials)
+    if (in_array($origin, $allowed_origins, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
+
+    // 👇 Required headers
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-    // Allow cookies / sessions to be sent cross-origin
     header('Access-Control-Allow-Credentials: true');
 
-    // Handle preflight OPTIONS request — browsers send this first
-    // before making the actual request (CORS spec requirement)
+    // 👇 Handle preflight (OPTIONS request)
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(204); // No Content
+        http_response_code(204);
         exit;
     }
 }
