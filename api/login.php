@@ -79,7 +79,9 @@ if (!password_verify($password, $user['password'])) {
     echo json_encode(['status' => 'error', 'message' => 'Invalid credentials.']);
     exit;
 }
-
+// ─── 6. Determine role (AFTER authentication) ─────────────────
+$allowed_admin_email = "admin@velvetbrew.com";
+$role = ($user['email'] === $allowed_admin_email) ? 'admin' : 'user';
 // ─── 6. Success — return safe user data (never return the password hash) ─────
 
 // Handle the leading-space PK alias gracefully
@@ -88,6 +90,7 @@ $customerId = $user['customer_id'] ?? $user[' customer_id'] ?? null;
 http_response_code(200);
 echo json_encode([
     'status' => 'success',
+    'role'   => $role,
     'user'   => [
         'customer_id' => $customerId,
         'first_name'  => $user['first_name'],
