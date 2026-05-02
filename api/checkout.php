@@ -26,6 +26,7 @@ require_once '../config/response.php';
 
 set_cors_headers();
 
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     send_error("Only POST method is allowed.", 405);
 }
@@ -36,6 +37,7 @@ if (!$data) {
     send_error("Invalid JSON body.", 400);
 }
 
+// shipping_method requirement
 if (empty($data['customer_id']) || empty($data['shipping']) || empty($data['payment'])) {
     send_error("customer_id, shipping, and payment are required.", 400);
 }
@@ -92,8 +94,10 @@ try {
         ];
     }
 
-    $shippingFee = ($shipping['shipping_method'] === 'express brew') ? 12.50 : 4.95;
-    $tax = round($subtotal * 0.10, 2);
+    // 
+    $shippingFee = 4.95;
+
+    $tax   = round($subtotal * 0.10, 2);
     $total = round($subtotal + $shippingFee + $tax, 2);
 
     // =====================================================
@@ -136,20 +140,19 @@ try {
     // =====================================================
     $shippingStmt = $pdo->prepare("
         INSERT INTO shipping_details
-        (order_id, first_name, last_name, street_address, city, state, zip, shipping_method)
+        (order_id, first_name, last_name, street_address, city, state, zip)
         VALUES
-        (:order_id, :first_name, :last_name, :street_address, :city, :state, :zip, :shipping_method)
+        (:order_id, :first_name, :last_name, :street_address, :city, :state, :zip)
     ");
 
     $shippingStmt->execute([
-        'order_id'        => $orderId,
-        'first_name'      => $shipping['first_name'],
-        'last_name'       => $shipping['last_name'],
-        'street_address'  => $shipping['street_address'],
-        'city'            => $shipping['city'],
-        'state'           => $shipping['state'],
-        'zip'             => $shipping['zip'],
-        'shipping_method' => $shipping['shipping_method']
+        'order_id'       => $orderId,
+        'first_name'     => $shipping['first_name'],
+        'last_name'      => $shipping['last_name'],
+        'street_address' => $shipping['street_address'],
+        'city'           => $shipping['city'],
+        'state'          => $shipping['state'],
+        'zip'            => $shipping['zip']
     ]);
 
     // =====================================================
@@ -189,9 +192,9 @@ try {
         "items" => $orderSummaryItems,
         "summary" => [
             "subtotal" => round($subtotal, 2),
-            "shipping" => round($shippingFee, 2),
-            "tax" => round($tax, 2),
-            "total" => round($total, 2)
+            "shipping" => $shippingFee,
+            "tax"      => $tax,
+            "total"    => $total
         ]
     ], 201);
 
