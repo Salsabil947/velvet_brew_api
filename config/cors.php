@@ -1,3 +1,4 @@
+<?php
 function set_cors_headers(): void {
 
     $allowed_origins = [
