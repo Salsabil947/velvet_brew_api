@@ -155,23 +155,40 @@ try {
         'zip'            => $shipping['zip']
     ]);
 
-    // =====================================================
-    // STEP 7: Insert payment
-    // =====================================================
-    $paymentStmt = $pdo->prepare("
-        INSERT INTO payments
-        (customer_id, order_id, card_number, expiration_date, cvv, payment_status)
-        VALUES
-        (:customer_id, :order_id, :card_number, :expiration_date, :cvv, 'completed')
-    ");
+// =====================================================
+// STEP 7: Insert payment
+// =====================================================
+// Validate format first
+   if (!preg_match('/^\d{1,2}\/\d{2}$/', $payment['expiration_date'])) {
+       throw new Exception("Invalid expiration date format. Use MM/YY");
+   }
 
-    $paymentStmt->execute([
-        'customer_id'     => $customerId,
-        'order_id'        => $orderId,
-        'card_number'     => $payment['card_number'],
-        'expiration_date' => $payment['expiration_date'],
-        'cvv'             => $payment['cvv']
-    ]);
+   $exp = $payment['expiration_date'];
+   list($month, $year) = explode('/', $exp);
+
+   // normalize month (05 instead of 5)
+   $month = str_pad($month, 2, '0', STR_PAD_LEFT);
+
+   // convert to full year (assumes 20xx)
+   $year = "20" . $year;
+
+   // final MySQL DATE format
+   $formatted_exp = "$year-$month-01";
+
+   $paymentStmt = $pdo->prepare("
+       INSERT INTO payments
+       (customer_id, order_id, card_number, expiration_date, cvv, payment_status)
+       VALUES
+       (:customer_id, :order_id, :card_number, :expiration_date, :cvv, 'completed')
+   ");
+
+   $paymentStmt->execute([
+       'customer_id'     => $customerId,
+       'order_id'        => $orderId,
+       'card_number'     => $payment['card_number'],
+       'expiration_date' => $formatted_exp,
+       'cvv'             => $payment['cvv']
+   ]);
 
     // =====================================================
     // STEP 8: Clear cart
