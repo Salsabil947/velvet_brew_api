@@ -15,7 +15,6 @@
 
 require_once '../config/db-db.php';
 require_once 'functions_products.php';
-set_cors_headers();
 
 // --- Always respond with JSON ---
 header('Content-Type: application/json');
