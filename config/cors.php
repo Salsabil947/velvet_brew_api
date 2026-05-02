@@ -9,7 +9,8 @@ function set_cors_headers(): void {
     // 👇 Allowed frontend origins
     $allowed_origins = [
         'http://localhost:5173',
-        'http://localhost:5174'
+        'http://localhost:5174',
+        'https://velvet-brew-lac.vercel.app/'
     ];
 
     // 👇 Get request origin
