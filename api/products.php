@@ -4,12 +4,6 @@
  * GET /api/products.php?collection=...
  * GET /api/products.php?search=fresh brews
  * GET /api/products.php?category=coffee
- * Retrieves a list of products with optional filtering.
- *
- * Query Parameters:
- *   search: Search term for product names
- *   category: Filter by category name
- *   collection: Filter by collection name
  */
 require_once '../config/cors.php';
 require_once '../config/db.php';
@@ -24,16 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
     $pdo = getPDO();
 
-    // ============================================
     // filters
-    // ============================================
     $search     = $_GET['search'] ?? '';
     $category   = $_GET['category'] ?? '';
     $collection = $_GET['collection'] ?? '';
 
-    // ============================================
-    // SQL Query (FIXED)
-    // ============================================
+    // SQL Query 
     $sql = "
         SELECT
             p.product_id,
@@ -86,9 +76,7 @@ try {
 
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // ============================================
     // Group by collection
-    // ============================================
     $collections = [];
 
     foreach ($products as $product) {
