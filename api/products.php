@@ -32,12 +32,10 @@ try {
             p.image_url,              
             c.category_name,
             p.description,
-            MIN(ps.price) AS price     
+            p.price    
         FROM products p
         INNER JOIN categories c 
             ON p.category_id = c.category_id
-        LEFT JOIN product_sizes ps 
-            ON p.product_id = ps.product_id
         WHERE 1 = 1
     ";
 
