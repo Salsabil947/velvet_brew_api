@@ -26,9 +26,7 @@ $pdo = getPDO();
 
 try {
 
-    // =====================================================
-    // STEP 1: Get order + shipping details
-    // =====================================================
+    // Get order + shipping details
     $sql = "
         SELECT
             o.order_id,
@@ -52,9 +50,7 @@ try {
         send_error("Order not found.", 404);
     }
 
-    // =====================================================
-    // STEP 2: Get order items
-    // =====================================================
+    // Get order items
     $itemsSql = "
         SELECT
             p.product_name,
@@ -85,16 +81,12 @@ try {
         ];
     }
 
-    // =====================================================
-    // STEP 3: Shipping fee based on shipping method
-    // =====================================================
+    // Shipping fee based on shipping method
     $shippingFee = ($order['shipping_method'] === 'express brew') ? 12.50 : 4.95;
 
     $total = $subtotal + $shippingFee;
 
-    // =====================================================
-    // STEP 4: Estimated arrival
-    // =====================================================
+    // Estimated arrival
     $arrivalMap = [
         'order placed' => '20 - 30 mins',
         'roasting'     => '15 - 25 mins',
@@ -104,9 +96,7 @@ try {
 
     $estimatedArrival = $arrivalMap[$order['status']] ?? 'Pending';
 
-    // =====================================================
-    // STEP 5: Final Response
-    // =====================================================
+    // Final Response
     send_json([
         "success" => true,
         "data" => [
