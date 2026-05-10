@@ -34,9 +34,7 @@ switch ($method) {
         send_error("Method not allowed", 405);
 }
 
-// ===================================================
-// GET CART
-// ===================================================
+// Get cart
 function handleGetCart() {
     $pdo = getPDO();
 
@@ -94,9 +92,7 @@ function handleGetCart() {
     }
 }
 
-// ===================================================
-// ADD TO CART
-// ===================================================
+// Add to cart
 function handleAddToCart() {
     $pdo = getPDO();
 
@@ -157,9 +153,7 @@ function handleAddToCart() {
     }
 }
 
-// ===================================================
-// UPDATE CART ITEM
-// ===================================================
+// Update cart item
 function handleUpdateCart() {
     $pdo = getPDO();
 
@@ -204,9 +198,7 @@ function handleUpdateCart() {
     }
 }
 
-// ===================================================
-// DELETE CART ITEM
-// ===================================================
+// Delete cart item
 function handleDeleteCart() {
     $pdo = getPDO();
 
