@@ -50,9 +50,7 @@ $pdo = getPDO();
 
 try {
 
-    // =====================================================
-    // STEP 1: Fetch cart items
-    // =====================================================
+    // Fetch cart items
     $cartSql = "
         SELECT
             c.cart_id,
@@ -76,9 +74,8 @@ try {
         send_error("Cart is empty.", 400);
     }
 
-    // =====================================================
-    // STEP 2: Calculate totals
-    // =====================================================
+   
+    // Calculate totals
     $subtotal = 0;
     $orderSummaryItems = [];
 
@@ -100,14 +97,10 @@ try {
     $tax   = round($subtotal * 0.10, 2);
     $total = round($subtotal + $shippingFee + $tax, 2);
 
-    // =====================================================
-    // STEP 3: Start transaction
-    // =====================================================
+    // Start transaction
     $pdo->beginTransaction();
 
-    // =====================================================
-    // STEP 4: Insert order
-    // =====================================================
+    // Insert order
     $orderStmt = $pdo->prepare("
         INSERT INTO orders (customer_id, order_date, status)
         VALUES (:customer_id, CURDATE(), 'order placed')
@@ -118,9 +111,7 @@ try {
 
     $orderId = $pdo->lastInsertId();
 
-    // =====================================================
-    // STEP 5: Insert order items
-    // =====================================================
+    // Insert order items
     $itemStmt = $pdo->prepare("
         INSERT INTO order_items (order_id, product_sizes_id, quantity, discount, price)
         VALUES (:order_id, :product_sizes_id, :quantity, 0, :price)
@@ -135,9 +126,7 @@ try {
         ]);
     }
 
-    // =====================================================
-    // STEP 6: Insert shipping details
-    // =====================================================
+    // Insert shipping details
     $shippingStmt = $pdo->prepare("
         INSERT INTO shipping_details
         (order_id, first_name, last_name, street_address, city, state, zip)
@@ -155,10 +144,7 @@ try {
         'zip'            => $shipping['zip']
     ]);
 
-// =====================================================
-// STEP 7: Insert payment
-// =====================================================
-// Validate format first
+// Insert payment
    if (!preg_match('/^\d{1,2}\/\d{2}$/', $payment['expiration_date'])) {
        throw new Exception("Invalid expiration date format. Use MM/YY");
    }
@@ -166,13 +152,10 @@ try {
    $exp = $payment['expiration_date'];
    list($month, $year) = explode('/', $exp);
 
-   // normalize month (05 instead of 5)
    $month = str_pad($month, 2, '0', STR_PAD_LEFT);
 
-   // convert to full year (assumes 20xx)
    $year = "20" . $year;
 
-   // final MySQL DATE format
    $formatted_exp = "$year-$month-01";
 
    $paymentStmt = $pdo->prepare("
@@ -190,9 +173,7 @@ try {
        'cvv'             => $payment['cvv']
    ]);
 
-    // =====================================================
-    // STEP 8: Clear cart
-    // =====================================================
+    // Clear cart
     $clearStmt = $pdo->prepare("DELETE FROM cart WHERE customer_id = :customer_id");
     $clearStmt->execute([
         'customer_id' => $customerId
@@ -200,9 +181,7 @@ try {
 
     $pdo->commit();
 
-    // =====================================================
-    // STEP 9: Response
-    // =====================================================
+    // Response
     send_json([
         "success" => true,
         "order_id" => (int)$orderId,
