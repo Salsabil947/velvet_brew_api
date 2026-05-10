@@ -52,10 +52,9 @@ function handleGetCart() {
                 c.quantity,
                 p.product_name,
                 p.description,
-                MIN(ps.price) AS price
+                p.price
             FROM cart c
             JOIN products p ON c.product_id = p.product_id
-            JOIN product_sizes ps ON p.product_id = ps.product_id
             WHERE c.customer_id = :customer_id
             GROUP BY c.cart_id, c.product_id, c.quantity, p.product_name
         ";
