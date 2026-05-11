@@ -20,7 +20,7 @@ set_cors_headers();
 // Then other headers
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/db-db.php';
+require_once __DIR__ . '/../config/db.php';
 
 // ─── 1. Only allow POST ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
