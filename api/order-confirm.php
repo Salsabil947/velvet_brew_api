@@ -94,7 +94,7 @@ try {
     }
 
     // Fixed delivery fee
-    $shippingFee = 4.95;
+    $shippingFee = 30;
 
     $total = $subtotal + $shippingFee;
 
