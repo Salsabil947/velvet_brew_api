@@ -129,25 +129,41 @@ if ($trimmedKey === 'password') {
     $value = password_hash((string)$value, PASSWORD_BCRYPT);
 }
 
-// Convert birth_date from MM/DD/YY or MM/DD/YYYY to YYYY-MM-DD
+// Convert birth_date to YYYY-MM-DD (MySQL DATE format)
 if ($trimmedKey === 'birth_date' && !empty($value)) {
 
-    // Try 4-digit year first
-    $date = DateTime::createFromFormat('m/d/Y', (string)$value);
+    $value = trim($value);
 
-    // If failed, try 2-digit year
-    if (!$date) {
-        $date = DateTime::createFromFormat('m/d/y', (string)$value);
+    $formats = [
+        'Y-m-d',   
+        'm/d/Y',   
+        'm/d/y',   
+        'd/m/Y',   
+        'd-m-Y',   
+        'Y/m/d',   
+        'd M Y', 
+        'M d Y', 
+    ];
+
+    $date = false;
+
+    foreach ($formats as $format) {
+        $date = DateTime::createFromFormat($format, $value);
+
+        if ($date && $date->format($format) === $value) {
+            break;
+        }
+
+        $date = false;
     }
 
-    // Convert to MySQL DATE format
     if ($date) {
         $value = $date->format('Y-m-d');
     } else {
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid birth date format.'
+            'message' => 'Invalid birth date format. Please use a valid date format.'
         ]);
         exit;
     }
