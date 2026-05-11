@@ -92,9 +92,9 @@ try {
     }
 
     // 
-    $shippingFee = 4.95;
+    $shippingFee = 30;
 
-    $tax   = round($subtotal * 0.10, 2);
+    $tax   = round($subtotal * 0.14, 2);
     $total = round($subtotal + $shippingFee + $tax, 2);
 
     // Start transaction
