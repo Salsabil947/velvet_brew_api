@@ -20,7 +20,7 @@ set_cors_headers();
 // Then other headers
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/db-db.php';
 
 // ─── 1. Only allow POST ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -124,50 +124,11 @@ foreach ($body as $key => $value) {
 
     $realCol = $columnMap[$trimmedKey]; // may differ from $key due to spaces
 
-// Hash the password before storing
-if ($trimmedKey === 'password') {
-    $value = password_hash((string)$value, PASSWORD_BCRYPT);
-}
-
-// Convert birth_date to YYYY-MM-DD (MySQL DATE format)
-if ($trimmedKey === 'birth_date' && !empty($value)) {
-
-    $value = trim($value);
-
-    $formats = [
-        'Y-m-d',   
-        'm/d/Y',   
-        'm/d/y',   
-        'd/m/Y',   
-        'd-m-Y',   
-        'Y/m/d',   
-        'd M Y', 
-        'M d Y', 
-    ];
-
-    $date = false;
-
-    foreach ($formats as $format) {
-        $date = DateTime::createFromFormat($format, $value);
-
-        if ($date && $date->format($format) === $value) {
-            break;
-        }
-
-        $date = false;
+    // Hash the password before storing
+    if ($trimmedKey === 'password') {
+        $value = password_hash((string)$value, PASSWORD_BCRYPT);
     }
 
-    if ($date) {
-        $value = $date->format('Y-m-d');
-    } else {
-        http_response_code(400);
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Invalid birth date format. Please use a valid date format.'
-        ]);
-        exit;
-    }
-}
     $placeholder = ':param_' . preg_replace('/\W/', '_', $trimmedKey);
     $insertCols[]              = "`{$realCol}`";
     $insertParams[]            = $placeholder;
