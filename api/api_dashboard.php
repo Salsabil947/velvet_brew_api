@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $action = $_GET['action'] ?? '';
 
 // ============================================================
-// ROUTE: GET requests
+// GET requests
 // ============================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
@@ -73,11 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $limit  = $_GET['limit'] ?? 5;
             $orders = getRecentOrders($conn, $limit);
 
-            // FIX: The UI and this filter use 'in_route' (with underscore)
-            //      but the DB stores 'in route' (with space).
-            //      getRecentOrders() already maps 'order placed' → 'pending'.
-            //      Here we also normalise 'in route' → 'in_route' for the filter
-            //      so ?status=in_route works correctly from the frontend.
+
             $status_filter = strtolower($_GET['status'] ?? '');
             if ($status_filter !== '') {
                 $orders = array_filter($orders, function($o) use ($status_filter) {
@@ -120,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
 // ============================================================
-// ROUTE: POST requests
+// POST requests
 // ============================================================
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
