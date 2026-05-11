@@ -124,9 +124,22 @@ foreach ($body as $key => $value) {
 
     $realCol = $columnMap[$trimmedKey]; // may differ from $key due to spaces
 
-    // Hash the password before storing
+    // Hash password
     if ($trimmedKey === 'password') {
         $value = password_hash((string)$value, PASSWORD_BCRYPT);
+        }
+
+    // Fix birth_date format
+    if ($trimmedKey === 'birth_date' && !empty($value)) {
+
+    // Convert from MM/DD/YYYY to YYYY-MM-DD
+    $date = DateTime::createFromFormat('m/d/Y', $value);
+
+    if ($date) {
+        $value = $date->format('Y-m-d');
+         } else {
+        $value = null;
+        }
     }
 
     $placeholder = ':param_' . preg_replace('/\W/', '_', $trimmedKey);
