@@ -33,6 +33,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ─── 2. Parse JSON body ───────────────────────────────────────────────────────
 $body = json_decode(file_get_contents('php://input'), true);
 
+// Convert frontend camelCase fields to DB column names
+if (isset($body['firstName'])) {
+    $body['first_name'] = $body['firstName'];
+}
+
+if (isset($body['lastName'])) {
+    $body['last_name'] = $body['lastName'];
+}
+
+if (isset($body['birthday'])) {
+    $body['birth_date'] = $body['birthday'];
+}
+
 if (!is_array($body)) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid JSON body.']);
