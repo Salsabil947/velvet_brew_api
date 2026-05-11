@@ -129,18 +129,23 @@ foreach ($body as $key => $value) {
         $value = password_hash((string)$value, PASSWORD_BCRYPT);
         }
 
-    // Fix birth_date format
-    if ($trimmedKey === 'birth_date' && !empty($value)) {
+// Fix birth_date format
+if ($trimmedKey === 'birth_date' && !empty($value)) {
 
-    // Convert from MM/DD/YYYY to YYYY-MM-DD
-    $date = DateTime::createFromFormat('m/d/Y', $value);
+    // HTML date input sends YYYY-MM-DD
+    $date = DateTime::createFromFormat('Y-m-d', $value);
+
+    // Optional fallback for MM/DD/YYYY
+    if (!$date) {
+        $date = DateTime::createFromFormat('m/d/Y', $value);
+    }
 
     if ($date) {
         $value = $date->format('Y-m-d');
-         } else {
+    } else {
         $value = null;
-        }
     }
+}
 
     $placeholder = ':param_' . preg_replace('/\W/', '_', $trimmedKey);
     $insertCols[]              = "`{$realCol}`";
