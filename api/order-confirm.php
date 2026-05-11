@@ -2,6 +2,7 @@
 /*
 GET /api/order-confirm.php?order_id={order_id}
 */
+
 require_once '../config/cors.php';
 require_once '../config/db.php';
 require_once '../config/response.php';
@@ -16,7 +17,7 @@ if (empty($_GET['order_id'])) {
     send_error("order_id is required.", 400);
 }
 
-$orderId = (int)$_GET['order_id'];
+$orderId = (int) $_GET['order_id'];
 
 if ($orderId <= 0) {
     send_error("Invalid order_id.", 400);
@@ -34,16 +35,19 @@ try {
             sd.street_address,
             sd.city,
             sd.state,
-            sd.zip,
-            sd.shipping_method
+            sd.zip
         FROM orders o
-        LEFT JOIN shipping_details sd ON o.order_id = sd.order_id
+        LEFT JOIN shipping_details sd 
+            ON o.order_id = sd.order_id
         WHERE o.order_id = :order_id
         LIMIT 1
     ";
 
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(['order_id' => $orderId]);
+    $stmt->execute([
+        'order_id' => $orderId
+    ]);
+
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$order) {
@@ -58,31 +62,39 @@ try {
             oi.price,
             oi.total_price
         FROM order_items oi
-        JOIN product_sizes ps ON oi.product_sizes_id = ps.product_sizes_id
-        JOIN products p ON ps.product_id = p.product_id
+        JOIN product_sizes ps 
+            ON oi.product_sizes_id = ps.product_sizes_id
+        JOIN products p 
+            ON ps.product_id = p.product_id
         WHERE oi.order_id = :order_id
     ";
 
     $stmt = $pdo->prepare($itemsSql);
-    $stmt->execute(['order_id' => $orderId]);
+    $stmt->execute([
+        'order_id' => $orderId
+    ]);
+
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $subtotal = 0;
     $formattedItems = [];
 
     foreach ($items as $item) {
-        $subtotal += $item['total_price'];
+
+        $lineTotal = (float) $item['total_price'];
+
+        $subtotal += $lineTotal;
 
         $formattedItems[] = [
             "product_name" => $item['product_name'],
-            "quantity"     => (int)$item['quantity'],
-            "price"        => (float)$item['price'],
-            "line_total"   => (float)$item['total_price']
+            "quantity"     => (int) $item['quantity'],
+            "price"        => (float) $item['price'],
+            "line_total"   => $lineTotal
         ];
     }
 
-    // Shipping fee based on shipping method
-    $shippingFee = ($order['shipping_method'] === 'express brew') ? 12.50 : 4.95;
+    // Fixed delivery fee
+    $shippingFee = 4.95;
 
     $total = $subtotal + $shippingFee;
 
@@ -100,8 +112,11 @@ try {
     send_json([
         "success" => true,
         "data" => [
-            "order_id" => (int)$order['order_id'],
+
+            "order_id" => (int) $order['order_id'],
+
             "status" => $order['status'],
+
             "estimated_arrival" => $estimatedArrival,
 
             "summary" => [
@@ -123,5 +138,7 @@ try {
     ]);
 
 } catch (PDOException $e) {
+
     send_error("Database error: " . $e->getMessage(), 500);
+
 }
