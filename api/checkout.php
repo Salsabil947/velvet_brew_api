@@ -103,7 +103,7 @@ try {
     // Insert order
     $orderStmt = $pdo->prepare("
         INSERT INTO orders (customer_id, order_date, status)
-        VALUES (:customer_id, CURDATE(), 'Pending')
+        VALUES (:customer_id, CURDATE(), 'pending')
     ");
     $orderStmt->execute([
         'customer_id' => $customerId
